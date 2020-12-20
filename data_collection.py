@@ -44,11 +44,11 @@ class DataCollection:
         @type controller: Controller
         """
         # outputs
-        thrust = int(controller.is_up())
+        thrust = int(controller.up)
         new_vel_y = lander.velocity.y
         new_vel_x = lander.velocity.x
 
-        turning = [int(controller.is_left()), int(controller.is_right())]
+        turning = [int(controller.left), int(controller.right)]
         new_angle = lander.current_angle
 
         state += [thrust, new_vel_y, new_vel_x, new_angle, turning[0], turning[1]]
