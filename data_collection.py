@@ -3,9 +3,16 @@ import pandas as pd
 
 columns = [
     'Current speed', 'Velocity (X)', 'Velocity (Y)', 'Current Angle',
-    'Target (X)', 'Target (Y)', 'Distance To Surface', 'Thrust', 'New Vel (Y)',
-    'New Vel (X)', 'New Angle', 'Left', 'Right'
+    'Target (X)', 'Target (Y)', 'Distance To Surface', 'Action'
 ]
+
+def parse_into_action(up, left, right):
+    """Parse into all the possible actions that the user can make"""
+    return 0 if up and left and not right else \
+           1 if up and not left and right else \
+           2 if up and not left and not right else \
+           3 if not up and left and not right else \
+           4 if not up and not left and right else 5
 
 class DataCollection:
     def __init__(self):
@@ -20,7 +27,6 @@ class DataCollection:
         @type lander: Lander
         @type surface: Surface
         """
-        # inputs
         current_velocity = lander.velocity
         current_speed = current_velocity.length()
         current_angle = lander.current_angle
@@ -28,13 +34,12 @@ class DataCollection:
         y_target = surface.centre_landing_pad[1] - lander.position.y
         dist_to_surface = surface.polygon_rect.topleft[1] - lander.position.y
 
-        # create comma separated string row
         state = [current_speed, current_velocity.x, current_velocity.y, current_angle]
         state += [x_target, y_target, dist_to_surface]
 
         return state
 
-    def save_state(self, state, lander, controller):
+    def save_state(self, state, controller):
         """
         Save the current state of the game and the outputs to be able to
         predict it later on.
@@ -43,15 +48,8 @@ class DataCollection:
         @type lander: Lander
         @type controller: Controller
         """
-        thrust = int(controller.up)
-        new_vel_y = lander.velocity.y
-        new_vel_x = lander.velocity.x
-
-        turning = [int(controller.left), int(controller.right)]
-        new_angle = lander.current_angle
-
-        state += [thrust, new_vel_y, new_vel_x, new_angle, turning[0], turning[1]]
-
+        action = parse_into_action(controller.up, controller.left, controller.right)
+        state.append(action)
         self.buffer.append(state)
 
     def write_to_file(self):
@@ -60,4 +58,5 @@ class DataCollection:
         dataframe.to_csv('data.csv', index=False, header=None, mode='a')
 
     def reset(self):
+        """Clears the buffer"""
         self.buffer.clear()

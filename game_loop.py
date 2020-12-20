@@ -147,7 +147,7 @@ class GameLoop:
                     self.update_objects()
                     if game_modes[1]:
                         state = data_collector.get_state(self.lander, self.controller)
-                        data_collector.save_state(state, self.lander, self.controller)
+                        data_collector.save_state(state, self.controller)
                 self.sprites.draw(self.screen)
 
                 self.check_if_game_ended(on_menus, game_modes, data_collector)
