@@ -60,5 +60,5 @@ class DataCollection:
         dataframe = pd.DataFrame(self.buffer, columns=columns)
         dataframe.to_csv('data.csv', index=False, header=None, mode='a')
 
-        # Reset buffer
+    def reset(self):
         self.buffer.clear()

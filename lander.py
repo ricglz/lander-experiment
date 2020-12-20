@@ -50,7 +50,7 @@ class Lander(pygame.sprite.Sprite):
 
         self.current_angle += theta
         if self.current_angle < 0:
-            self.current_angle = self.current_angle + 360
+            self.current_angle += 360
         elif self.current_angle >= 360:
             self.current_angle = self.current_angle % 360
 
