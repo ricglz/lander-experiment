@@ -21,25 +21,27 @@ class GameLoop:
     game_started = False
     lander = None
     main_menu = None
-    myfont = None
     neuralnet = None
     object_list = []
     result_menu = None
     screen = None
+    sprites = None
     surface = None
     total_games = 0
     won_games = 0
 
     def __init__(self, config_data):
+        pygame.init()
         self.handler = EventHandler(self.controller, self)
         self.config_data = config_data
-        pygame.init()
         config_data['SCREEN_WIDTH'] = int(config_data['SCREEN_WIDTH'])
         config_data['SCREEN_HEIGHT'] = int(config_data['SCREEN_HEIGHT'])
         config_data['DIM'] = config_data['SCREEN_WIDTH'], config_data['SCREEN_HEIGHT']
         self.screen = pygame.display.set_mode(config_data['DIM'])
         pygame.display.set_caption('Lander game')
         pygame.display.set_icon(pygame.image.load(config_data['LANDER_IMG_PATH']))
+        self.main_menu = MainMenu(config_data['DIM'])
+        self.result_menu = ResultMenu(config_data['DIM'])
 
     def score_calculation(self):
         score = 1000.0 - (self.surface.centre_landing_pad[0] - self.lander.position.x)
@@ -69,9 +71,6 @@ class GameLoop:
             result_menu.draw_result_objects(self.screen, on_menus[1], score)
         else:
             main_menu.draw_buttons(self.screen)
-            # draw the version number
-            textsurface = self.myfont.render('Version 1', False, (0, 0, 0))
-            self.screen.blit(textsurface, (0, 0))
 
         # main_menu.draw_buttons(self.screen)
         for event in pygame.event.get():
@@ -108,27 +107,21 @@ class GameLoop:
             ang_val = round((self.lander.current_angle - 30) / 300)
             self.lander.current_angle = 30 if ang_val == 0 else 330
 
-    def main_loop(self, config_data):
-        pygame.font.init()  # you have to call this at the start,
-        # if you want to use this module you need to call pygame.font.init()
-        self.myfont = pygame.font.SysFont('Comic Sans MS', 30)
+    def create_background_image(self):
+        config_data = self.config_data
+        background_image = pygame.image.load(config_data['BACKGROUND_IMG_PATH']).convert_alpha()
+        return pygame.transform.scale(background_image, config_data['DIM'])
 
-        # create the group for visuals to be updated
-        sprites = pygame.sprite.Group()
+    def main_loop(self, config_data):
+        pygame.font.init() # you have to call this at the start,
+        background_image = self.create_background_image()
+        data_collector = DataCollection()
 
         # booleans for what the game state is
         on_menus = [True, False, False] # Main, Won, Lost
-
         # Game modes: Play Game, Data Collection, Neural Net, Quit
-        game_modes = [False, False, False, False]
+        game_modes = [False] * 4
 
-        # The main loop of the window
-        background_image = pygame.image.load(config_data['BACKGROUND_IMG_PATH']).convert_alpha()
-        background_image = pygame.transform.scale(background_image, config_data['DIM'])
-
-        data_collector = DataCollection()
-        self.main_menu = MainMenu(config_data['DIM'])
-        self.result_menu = ResultMenu(config_data['DIM'])
         # Initialize
         while True:
             if game_modes[-1]:
@@ -136,10 +129,7 @@ class GameLoop:
 
             # if game is started, initialize all objects
             if self.game_started:
-                self.controller = Controller()
-                self.handler = EventHandler(self.controller, self)
-                sprites = pygame.sprite.Group()
-                self.game_start(config_data, sprites)
+                self.game_start(config_data, game_modes[2])
 
             if on_menus[0] or on_menus[1] or on_menus[2]:
                 self.not_in_game(on_menus, game_modes)
@@ -147,10 +137,7 @@ class GameLoop:
                 if self.game_started:
                     self.update_objects()
                     self.game_started = False
-
-                # game
                 self.handler.handle(pygame.event.get())
-                # check if data collection mode is activated
                 if game_modes[2]:
                     self.neural_network_action(data_collector)
 
@@ -161,35 +148,14 @@ class GameLoop:
                     if game_modes[1]:
                         state = data_collector.get_state(self.lander, self.controller)
                         data_collector.save_state(state, self.lander, self.controller)
-                # then update the visuals on screen from the list
-                sprites.draw(self.screen)
-                # the win state and the score calculation
-                collided_window = self.lander.window_collision(config_data['DIM'])
-                if self.lander.landing_pad_collision(self.surface):
-                    on_menus[1] = True
-                    if game_modes[2]:
-                        self.won_games += 1
-                        # data_collector.write_to_file()
-                        # data_collector.reset()
-                    if game_modes[1]:
-                        data_collector.write_to_file()
-                        data_collector.reset()
-                # check if lander collided with surface
-                elif self.lander.surface_collision(self.surface) or collided_window:
-                    on_menus[2] = True
-                    data_collector.reset()
+                self.sprites.draw(self.screen)
 
+                self.check_if_game_ended(on_menus, game_modes, data_collector)
                 game_over = on_menus[1] or on_menus[2]
 
-                if game_modes[2]:
-                    state = data_collector.get_state(self.lander, self.surface)
-                    # feedback = state, self.get_reward(), game_over
-                    # self.neuralnet.step_finished(feedback)
-                    if game_over:
-                        # self.neuralnet.episode_finished()
-                        sprites = pygame.sprite.Group()
-                        self.restart_game(sprites)
-                        on_menus[1], on_menus[2], game_over = [False] * 3
+                if game_modes[2] and game_over:
+                    self.restart_game()
+                    on_menus[1], on_menus[2], game_over = [False] * 3
 
                 if game_over:
                     self.game_started = False
@@ -200,11 +166,9 @@ class GameLoop:
             pygame.display.flip()
             self.fps_clock.tick(self.fps)
 
-    def restart_game(self, sprites):
+    def restart_game(self):
         self.total_games += 1
-        self.controller = Controller()
-        self.handler = EventHandler(self.controller, self)
-        self.game_start(self.config_data, sprites)
+        self.game_start(self.config_data, True)
 
     def get_reward(self):
         dimmensions = self.config_data['DIM']
@@ -217,7 +181,7 @@ class GameLoop:
         return self.score_calculation() * 1000 if has_won else \
                 (-distance) * 50 if has_lost else (250 - x_target) + (250 - y_target)
 
-    def update_objects(self):
+    def update_objects(self,):
         # update the speeds and positions of the objects in game
         self.game_logic.update(0.2)
 
@@ -229,8 +193,26 @@ class GameLoop:
         self.game_logic.add_lander(lander)
         return lander
 
-    def game_start(self, config_data, sprites):
+    def game_start(self, config_data, ai_is_playing):
+        self.controller = Controller()
+        self.handler = EventHandler(self.controller, self)
+        self.handler.first_key_press = ai_is_playing
         self.lander = self.setup_lander(config_data)
         self.surface = Surface(config_data['DIM'])
-        sprites.add(self.lander)
-        sprites.add(self.surface)
+
+        self.sprites = pygame.sprite.Group()
+        self.sprites.add(self.lander)
+        self.sprites.add(self.surface)
+
+    def check_if_game_ended(self, on_menus, game_modes, data_collector):
+        collided_window = self.lander.window_collision(self.config_data['DIM'])
+        if self.lander.landing_pad_collision(self.surface):
+            on_menus[1] = True
+            if game_modes[2]:
+                self.won_games += 1
+            if game_modes[1]:
+                data_collector.write_to_file()
+                data_collector.reset()
+        elif self.lander.surface_collision(self.surface) or collided_window:
+            on_menus[2] = True
+            data_collector.reset()

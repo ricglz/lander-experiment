@@ -7,9 +7,7 @@ def get_config_file():
     for line in file:
         line_split = line.split(',')
         for individual in line_split:
-            individual = individual.replace(' ', '')
-            individual = individual.replace('\n', '')
-            content = individual.split('=')
+            content = individual.replace(' ', '').replace('\n', '').split('=')
             keys.append(content[0])
             values.append(content[1])
     return dict(zip(keys, values))

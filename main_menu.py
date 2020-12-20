@@ -1,26 +1,23 @@
+"""Module for creating and managing the main menu"""
 import pygame
 
 class MainMenu:
     def __init__(self, screen_dimension):
         self.colors=[(0,0,0), (128,128,128), (255,255,255)]
-        self.top_left=(screen_dimension[0]/2, screen_dimension[1]/2)
+        self.top_left=(screen_dimension[0]/2, 100)
 
         font = pygame.font.SysFont("Times New Norman", 60)
-        text_buttons = [font.render("Play Game", True, self.colors[2]),
-                        font.render("Data Collection", True, self.colors[2]),
-                        font.render("Neural Network", True, self.colors[2]),
-                        font.render("Quit", True, self.colors[2])]
-        rect_buttons = [pygame.Rect(self.top_left[0]-200, self.top_left[1], 400, 80),
-                        pygame.Rect(self.top_left[0]-200, self.top_left[1]+100, 400, 80),
-                        pygame.Rect(self.top_left[0]-200, self.top_left[1]+200, 400, 80),
-                        pygame.Rect(self.top_left[0]-200, self.top_left[1]+300, 400, 80)]
+        texts = ['Play Game', 'Data Collection', 'Neural Network', 'Quit']
+        create_text_button = lambda text: font.render(text, True, self.colors[2])
+        text_buttons = list(map(create_text_button, texts))
 
-        self.buttons = [
-            [text_buttons[0], rect_buttons[0], self.colors[0]],
-            [text_buttons[1], rect_buttons[1], self.colors[0]],
-            [text_buttons[2], rect_buttons[2], self.colors[0]],
-            [text_buttons[3], rect_buttons[3], self.colors[0]],
-        ]
+        left_initial = self.top_left[0] - 200
+        create_rect_button = lambda values: pygame.Rect(
+            left_initial, self.top_left[1] + 100 * values[0], 400, 80)
+        rect_buttons = list(map(create_rect_button, enumerate(text_buttons)))
+
+        create_button = lambda values: [text_buttons[values[0]], values[1], self.colors[0]]
+        self.buttons = list(map(create_button, enumerate(rect_buttons)))
 
     def draw_buttons(self, screen):
         screen.fill(self.colors[2])

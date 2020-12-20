@@ -43,7 +43,6 @@ class DataCollection:
         @type lander: Lander
         @type controller: Controller
         """
-        # outputs
         thrust = int(controller.up)
         new_vel_y = lander.velocity.y
         new_vel_x = lander.velocity.x
