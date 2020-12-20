@@ -1,4 +1,4 @@
-from game_loop import GameLoop
+from game.game_loop import GameLoop
 
 def get_config_file():
     keys = []

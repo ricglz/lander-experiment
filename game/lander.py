@@ -1,6 +1,7 @@
 import pygame
-from vector import Vector
-from collision_utility import CollisionUtility
+
+from .collision_utility import CollisionUtility
+from .vector import Vector
 
 class Lander(pygame.sprite.Sprite):
     gravity = Vector(0, 0.5)

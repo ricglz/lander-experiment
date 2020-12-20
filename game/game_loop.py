@@ -3,15 +3,15 @@ import sys
 
 import pygame
 
-from event_handler import EventHandler
-from lander import Lander
-from controller import Controller
-from vector import Vector
-from game_logic import GameLogic
-from surface import Surface
-from main_menu import MainMenu
-from result_menu import ResultMenu
-from data_collection import DataCollection
+from .event_handler import EventHandler
+from .lander import Lander
+from .controller import Controller
+from .vector import Vector
+from .game_logic import GameLogic
+from .surface import Surface
+from .main_menu import MainMenu
+from .result_menu import ResultMenu
+from .data_collection import DataCollection
 
 class GameLoop:
     controller = Controller()

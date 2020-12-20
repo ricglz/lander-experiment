@@ -1,5 +1,5 @@
 SCREEN_HEIGHT = 750, SCREEN_WIDTH = 1200
-LANDER_IMG_PATH = sprites/rocket_lander.png
-BACKGROUND_IMG_PATH = sprites/background.bmp
+LANDER_IMG_PATH = game/sprites/rocket_lander.png
+BACKGROUND_IMG_PATH = game/sprites/background.bmp
 FULLSCREEN = FALSE
 ALL_DATA = FALSE
