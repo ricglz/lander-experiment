@@ -45,8 +45,8 @@ class Lander(pygame.sprite.Sprite):
         if self.controller.up:
             movement = (movement + Vector(0, -1)).scalar_multiply(delta_time)
 
-        modifier = 10 if self.controller.left else -10 if self.controller.right else 1
-        theta = modifier * delta_time
+        theta = 10 * delta_time if self.controller.left else \
+                -10 * delta_time if self.controller.right else 0
 
         self.current_angle += theta
         if self.current_angle < 0:
@@ -57,10 +57,10 @@ class Lander(pygame.sprite.Sprite):
         movement = movement.rotate(-self.current_angle)
 
         air_resistance = Vector(-0.2, 0) if self.velocity.x > 0 else Vector(0.2, 0)
-        last_velocity = self.velocity.clone()
         air_resistance = air_resistance.scalar_multiply(delta_time)
         gravity = self.gravity.scalar_multiply(delta_time)
 
+        last_velocity = self.velocity.clone()
         self.velocity += air_resistance + gravity + movement
         if self.velocity.length() > 8:
             self.velocity = last_velocity
