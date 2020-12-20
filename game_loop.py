@@ -21,7 +21,7 @@ class GameLoop:
     game_started = False
     lander = None
     main_menu = None
-    neuralnet = None
+    predictor = None
     object_list = []
     result_menu = None
     screen = None
@@ -93,19 +93,14 @@ class GameLoop:
                     on_menus[1] = False
                     on_menus[2] = False
 
-    def neural_network_action(self, data_collector):
+    def neural_network_action(self, state):
         """
-        @type data_collector: DataCollection
+        @type state: list
         """
-        state = data_collector.get_state(self.lander, self.surface)
-        nn_prediction = self.neuralnet.predict(state)
-        self.controller.up = self.lander.velocity.y > nn_prediction[0]
-        self.controller.right = self.lander.velocity.x < nn_prediction[1]
-        self.controller.left = not self.controller.right
-
-        if self.lander.current_angle > 30 and self.lander.current_angle < 330:
-            ang_val = round((self.lander.current_angle - 30) / 300)
-            self.lander.current_angle = 30 if ang_val == 0 else 330
+        action = self.predictor.predict(state)
+        self.controller.up = action < 3
+        self.controller.left = action in (0, 3)
+        self.controller.right = action in (1, 4)
 
     def create_background_image(self):
         config_data = self.config_data
@@ -139,7 +134,7 @@ class GameLoop:
                     self.game_started = False
                 self.handler.handle(pygame.event.get())
                 if game_modes[2]:
-                    self.neural_network_action(data_collector)
+                    self.neural_network_action(data_collector.get_state(self.lander, self.surface))
 
                 self.screen.blit(background_image,(0,0))
 
