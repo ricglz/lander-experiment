@@ -10,10 +10,10 @@ from tensorflow.keras.models import Sequential, load_model
 def build_model():
     """Builds tensorflow model"""
     model = Sequential([
-        Dense(10, activation='sigmoid', input_shape=(7,)),
-        Dense(5, activation='sigmoid'),
-        Dense(10, activation='sigmoid'),
-        Dense(5, activation='sigmoid'),
+        Dense(100, activation='relu', input_shape=(7,)),
+        Dense(50, activation='relu'),
+        Dense(100, activation='relu'),
+        Dense(50, activation='relu'),
         Dense(6, activation='softmax')
     ])
     model.compile(
@@ -39,7 +39,7 @@ class SupervisedPredictor():
         """
         @type training_set: (ndarray, ndarray)
         """
-        callback = EarlyStopping()
+        callback = EarlyStopping(patience=10)
         self.model.fit(
             training_set[0], training_set[1], batch_size=10,
             epochs=100, validation_data=validation_data, callbacks=[callback]
