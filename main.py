@@ -1,10 +1,7 @@
 """Main module of the program"""
-from pandas import read_csv
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
-
 from game.game_loop import GameLoop
 from predictors.supervised_predictor import SupervisedPredictor
+from extra.datasets import create_datasets
 
 def get_config_file():
     """Gets dictionary containing the config values"""
@@ -18,15 +15,6 @@ def get_config_file():
             keys.append(content[0])
             values.append(content[1])
     return dict(zip(keys, values))
-
-def create_datasets():
-    dataset = read_csv('data.csv', header=None).drop_duplicates()
-    values = dataset.values
-    inputs, output = values[:, :-1], values[:, -1]
-    scaler = MinMaxScaler()
-    inputs = scaler.fit_transform(inputs)
-    train_x, val_x, train_y, val_y = train_test_split(inputs, output, test_size=0.3)
-    return (train_x, train_y), (val_x, val_y), scaler
 
 def create_predictor():
     train_set, val_set, scaler = create_datasets()
