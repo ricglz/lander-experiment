@@ -6,6 +6,7 @@ from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.models import Sequential, load_model
 
 def build_model():
+    """Builds tensorflow model"""
     model = Sequential([
         Dense(10, activation='sigmoid', input_shape=(7,)),
         Dense(5, activation='sigmoid'),
@@ -41,8 +42,10 @@ class SupervisedPredictor():
             training_set[0], training_set[1], batch_size=10,
             epochs=100, validation_data=validation_data, callbacks=[callback]
         )
+        self.is_trained = True
 
     def predict(self, inputs):
+        """Makes a prediction using the model based on the inputs"""
         scaled_inputs = self.scaler.transform(inputs)
         prediction = self.model.predict(scaled_inputs)
         return tf.math.argmax(prediction)
