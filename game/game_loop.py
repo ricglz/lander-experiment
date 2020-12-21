@@ -141,7 +141,7 @@ class GameLoop:
                 if self.handler.first_key_press:
                     self.update_objects()
                     if game_modes[1]:
-                        state = data_collector.get_state(self.lander, self.controller)
+                        state = data_collector.get_state(self.lander, self.surface)
                         data_collector.save_state(state, self.controller)
                 self.sprites.draw(self.screen)
 
