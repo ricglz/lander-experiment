@@ -2,6 +2,7 @@
 import sys
 
 import pygame
+from numpy import array
 
 from .event_handler import EventHandler
 from .lander import Lander
@@ -21,7 +22,6 @@ class GameLoop:
     game_started = False
     lander = None
     main_menu = None
-    predictor = None
     object_list = []
     result_menu = None
     screen = None
@@ -30,7 +30,7 @@ class GameLoop:
     total_games = 0
     won_games = 0
 
-    def __init__(self, config_data):
+    def __init__(self, config_data, predictor):
         pygame.init()
         self.handler = EventHandler(self.controller, self)
         self.config_data = config_data
@@ -42,6 +42,7 @@ class GameLoop:
         pygame.display.set_icon(pygame.image.load(config_data['LANDER_IMG_PATH']))
         self.main_menu = MainMenu(config_data['DIM'])
         self.result_menu = ResultMenu(config_data['DIM'])
+        self.predictor = predictor
 
     def score_calculation(self):
         score = 1000.0 - (self.surface.centre_landing_pad[0] - self.lander.position.x)

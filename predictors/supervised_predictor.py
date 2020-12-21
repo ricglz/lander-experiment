@@ -1,4 +1,6 @@
 """Module containing supervised predictor"""
+from numpy import array
+
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import Dense
@@ -17,7 +19,7 @@ def build_model():
     model.compile(
         optimizer='adam',
         loss=SparseCategoricalCrossentropy(),
-        metrics=['accuracy', 'val_accuracy']
+        metrics=['accuracy']
     )
     return model
 
@@ -46,6 +48,6 @@ class SupervisedPredictor():
 
     def predict(self, inputs):
         """Makes a prediction using the model based on the inputs"""
-        scaled_inputs = self.scaler.transform(inputs)
-        prediction = self.model.predict(scaled_inputs)
+        scaled_inputs = self.scaler.transform(array(inputs).reshape(1, -1))
+        prediction = self.model.predict(scaled_inputs)[0]
         return tf.math.argmax(prediction)

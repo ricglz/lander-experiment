@@ -21,9 +21,10 @@ def get_config_file():
 
 def create_datasets():
     dataset = read_csv('data.csv', header=None).drop_duplicates()
-    scaler = MinMaxScaler()
-    values = scaler.fit_transform(dataset)
+    values = dataset.values
     inputs, output = values[:, :-1], values[:, -1]
+    scaler = MinMaxScaler()
+    inputs = scaler.fit_transform(inputs)
     train_x, val_x, train_y, val_y = train_test_split(inputs, output, test_size=0.3)
     return (train_x, train_y), (val_x, val_y), scaler
 
@@ -37,7 +38,8 @@ def create_predictor():
 def start_game_window():
     """Starts the game window"""
     config_data = get_config_file()
-    GameLoop(config_data).main_loop(config_data)
+    predictor = create_predictor()
+    GameLoop(config_data, predictor).main_loop(config_data)
 
 if __name__ == "__main__":
     start_game_window()
