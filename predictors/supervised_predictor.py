@@ -4,24 +4,21 @@ from numpy import array
 import tensorflow as tf
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.layers import Dense
-from tensorflow.keras.losses import SparseCategoricalCrossentropy
-from tensorflow.keras.models import Sequential, load_model
+from tensorflow.keras.models import load_model
+
+from extra.model import create_sequential_model
 
 def build_model():
     """Builds tensorflow model"""
-    model = Sequential([
-        Dense(100, activation='relu', input_shape=(7,)),
-        Dense(50, activation='relu'),
-        Dense(100, activation='relu'),
-        Dense(50, activation='relu'),
+    layers = [
+        Dense(83, activation='tanh', input_shape=(7,)),
+        Dense(100, activation='tanh'),
+        Dense(90, activation='tanh'),
+        Dense(94, activation='tanh'),
+        Dense(46, activation='tanh'),
         Dense(6, activation='softmax')
-    ])
-    model.compile(
-        optimizer='adam',
-        loss=SparseCategoricalCrossentropy(),
-        metrics=['accuracy']
-    )
-    return model
+    ]
+    return create_sequential_model(layers)
 
 class SupervisedPredictor():
     def __init__(self, filepath=None, scaler=None):

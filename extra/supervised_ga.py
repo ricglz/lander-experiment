@@ -1,12 +1,15 @@
 """GA for obtain the best architecture for a supervise predictor"""
+from multiprocessing import Pool
 from random import randint
 
+from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.layers import Dense
 from tensorflow.keras.losses import SparseCategoricalCrossentropy
 from tensorflow.keras.models import Sequential
 from deap import algorithms, base, creator, tools
 
 from datasets import create_datasets
+from model import create_sequential_model
 
 training_set, validation_data, _ = create_datasets()
 
@@ -16,19 +19,14 @@ def evaluate(individual):
     @type individual: list
     """
     int_layers = list(map(int, individual))
-    create_layers = lambda units: Dense(units, activation='relu')
-    layers = [Dense(int_layers[0], activation='relu', input_shape=(7,))]
+    create_layers = lambda units: Dense(units, activation='tanh')
+    layers = [Dense(int_layers[0], activation='tanh', input_shape=(7,))]
     layers += list(map(create_layers, int_layers[1:]))
     layers.append(Dense(6, activation='softmax'))
-    model = Sequential(layers)
-    model.compile(
-        optimizer='adam',
-        loss=SparseCategoricalCrossentropy(),
-        metrics=['accuracy']
-    )
+    model = create_sequential_model(layers)
     history = model.fit(
         training_set[0], training_set[1], batch_size=16,
-        epochs=5, validation_data=validation_data, verbose=0
+        epochs=10, validation_data=validation_data, verbose=0
     ).history
     return history['accuracy'][-1],
 
@@ -45,6 +43,8 @@ toolbox.register('evaluate', evaluate)
 
 if __name__ == "__main__":
     hall_of_fame = tools.HallOfFame(1)
+    pool = Pool()
+    toolbox.register('map', pool.map)
     for size in range(5, 11):
         toolbox.register('individual', tools.initRepeat, creator.Individual, toolbox.attribute, size)
         toolbox.register('population', tools.initRepeat, list, toolbox.individual)
