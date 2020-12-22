@@ -1,5 +1,6 @@
 """Module for collection data and getting state"""
 import pandas as pd
+from numpy import array
 
 columns = [
     'Current speed', 'Velocity (X)', 'Velocity (Y)', 'Current Angle',
@@ -37,20 +38,21 @@ class DataCollection:
         state = [current_speed, current_velocity.x, current_velocity.y, current_angle]
         state += [x_target, y_target, dist_to_surface]
 
-        return state
+        return array(state).reshape(1, -1)
 
     def save_state(self, state, controller):
         """
         Save the current state of the game and the outputs to be able to
         predict it later on.
 
-        @type state: list
+        @type state: ndarray
         @type lander: Lander
         @type controller: Controller
         """
         action = parse_into_action(controller.up, controller.left, controller.right)
-        state.append(action)
-        self.buffer.append(state)
+        state_list = state.tolist()
+        state_list.append(action)
+        self.buffer.append(state_list)
 
     def write_to_file(self):
         """Appends buffer data in data.csv"""

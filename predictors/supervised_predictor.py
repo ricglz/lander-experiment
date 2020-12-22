@@ -1,13 +1,13 @@
 """Module containing supervised predictor"""
-from numpy import array
-
-import tensorflow as tf
+from numpy import argmax, array
 from tensorflow.keras.callbacks import EarlyStopping
 from tensorflow.keras.models import load_model
 
 from extra.model import create_best_sequential
 
 class SupervisedPredictor():
+    is_rl = False
+
     def __init__(self, filepath=None, scaler=None):
         error_msg = 'Both filepath and scaler must be either None or not None'
         assert not bool(filepath) ^ bool(scaler), error_msg
@@ -32,9 +32,9 @@ class SupervisedPredictor():
 
     def predict(self, inputs):
         """Makes a prediction using the model based on the inputs"""
-        scaled_inputs = self.scaler.transform(array(inputs).reshape(1, -1))
+        scaled_inputs = self.scaler.transform(inputs)
         prediction = self.model.predict(scaled_inputs)[0]
-        return tf.math.argmax(prediction)
+        return argmax(prediction)
 
     def save(self, filepath):
         self.model.save(filepath)

@@ -15,6 +15,7 @@ from .result_menu import ResultMenu
 from .data_collection import DataCollection
 
 class GameLoop:
+    action = -1
     controller = Controller()
     fps = 60
     fps_clock = pygame.time.Clock()
@@ -26,6 +27,7 @@ class GameLoop:
     result_menu = None
     screen = None
     sprites = None
+    state = None
     surface = None
     total_games = 0
     won_games = 0
@@ -45,6 +47,7 @@ class GameLoop:
         self.predictor = predictor
 
     def score_calculation(self):
+        """Calculates the score of the game"""
         score = 1000.0 - (self.surface.centre_landing_pad[0] - self.lander.position.x)
 
         angle = self.lander.current_angle
@@ -57,13 +60,15 @@ class GameLoop:
         return score
 
     def on_quit(self):
+        """Quits the game"""
         if self.total_games > 0:
             win_ratio = self.won_games / self.total_games
             print(f'NN win ratio: {win_ratio:.4%}, Games: {self.total_games}')
         pygame.quit()
         sys.exit()
 
-    def not_in_game(self, on_menus, game_modes):
+    def in_a_menu(self, on_menus, game_modes):
+        """Management of what to do, when the player is on a menu"""
         result_menu = self.result_menu
         main_menu = self.main_menu
 
@@ -94,21 +99,67 @@ class GameLoop:
                     on_menus[1] = False
                     on_menus[2] = False
 
-    def neural_network_action(self, state):
+    def neural_network_action(self):
         """
         @type state: list
         """
-        action = self.predictor.predict(state)
+        action = self.predictor.predict(self.state)
         self.controller.up = action < 3
         self.controller.left = action in (0, 3)
         self.controller.right = action in (1, 4)
+        self.action = action
 
     def create_background_image(self):
         config_data = self.config_data
         background_image = pygame.image.load(config_data['BACKGROUND_IMG_PATH']).convert_alpha()
         return pygame.transform.scale(background_image, config_data['DIM'])
 
-    def main_loop(self, config_data):
+    def run_game(self, background_image, data_collector, on_menus, game_modes):
+        if game_modes[-1]:
+            self.on_quit()
+
+        if self.game_started:
+            self.game_start(game_modes[2])
+            self.state = data_collector.get_state(self.lander, self.surface)
+
+        if any(on_menus):
+            self.in_a_menu(on_menus, game_modes)
+        else:
+            if self.game_started:
+                self.update_objects()
+                self.game_started = False
+            self.handler.handle(pygame.event.get())
+            if game_modes[2]:
+                self.neural_network_action()
+
+            self.screen.blit(background_image,(0,0))
+
+            if self.handler.first_key_press:
+                self.update_objects()
+                if game_modes[1]:
+                    data_collector.save_state(self.state, self.controller)
+            self.sprites.draw(self.screen)
+
+            self.check_if_game_ended(on_menus, game_modes, data_collector)
+            game_over = on_menus[1] or on_menus[2]
+            self.update_state(game_over, data_collector.get_state(self.lander, self.surface))
+
+            if game_over:
+                if game_modes[2]:
+                    self.restart_game()
+                    self.state = data_collector.get_state(self.lander, self.surface)
+                    on_menus[1], on_menus[2] = [False] * 2
+                else:
+                    self.game_started = False
+                    for index, _ in enumerate(game_modes):
+                        game_modes[index] = False
+
+        # surface_sprites.draw(self.screen)
+        pygame.display.flip()
+        self.fps_clock.tick(self.fps)
+
+    def main_loop(self):
+        """Perform main loop"""
         pygame.font.init() # you have to call this at the start,
         background_image = self.create_background_image()
         data_collector = DataCollection()
@@ -120,51 +171,21 @@ class GameLoop:
 
         # Initialize
         while True:
-            if game_modes[-1]:
-                self.on_quit()
+            self.run_game(background_image, data_collector, on_menus, game_modes)
 
-            # if game is started, initialize all objects
-            if self.game_started:
-                self.game_start(config_data, game_modes[2])
-
-            if on_menus[0] or on_menus[1] or on_menus[2]:
-                self.not_in_game(on_menus, game_modes)
-            else:
-                if self.game_started:
-                    self.update_objects()
-                    self.game_started = False
-                self.handler.handle(pygame.event.get())
-                if game_modes[2]:
-                    self.neural_network_action(data_collector.get_state(self.lander, self.surface))
-
-                self.screen.blit(background_image,(0,0))
-
-                if self.handler.first_key_press:
-                    self.update_objects()
-                    if game_modes[1]:
-                        state = data_collector.get_state(self.lander, self.surface)
-                        data_collector.save_state(state, self.controller)
-                self.sprites.draw(self.screen)
-
-                self.check_if_game_ended(on_menus, game_modes, data_collector)
-                game_over = on_menus[1] or on_menus[2]
-
-                if game_modes[2] and game_over:
-                    self.restart_game()
-                    on_menus[1], on_menus[2], game_over = [False] * 3
-
-                if game_over:
-                    self.game_started = False
-                    for index, _ in enumerate(game_modes):
-                        game_modes[index] = False
-
-            # surface_sprites.draw(self.screen)
-            pygame.display.flip()
-            self.fps_clock.tick(self.fps)
+    def update_state(self, done, next_state):
+        if self.predictor.is_rl:
+            reward = self.get_reward()
+            step = self.state, self.action, reward, next_state, done
+            self.predictor.memorize(step)
+            batch_size = 16
+            if len(self.predictor.memory) > batch_size:
+                self.predictor.replay(batch_size)
+        self.state = next_state
 
     def restart_game(self):
         self.total_games += 1
-        self.game_start(self.config_data, True)
+        self.game_start(True)
 
     def get_reward(self):
         dimmensions = self.config_data['DIM']
@@ -174,10 +195,11 @@ class GameLoop:
         x_target = abs(self.surface.centre_landing_pad[0] - self.lander.position.x)
         y_target = abs(self.surface.centre_landing_pad[1] - self.lander.position.y)
         distance = x_target + y_target
-        return self.score_calculation() * 1000 if has_won else \
-                (-distance) * 50 if has_lost else (250 - x_target) + (250 - y_target)
+        score = self.score_calculation()
+        return (score / 1600) / 2 + 0.5 if has_won else \
+               0 if has_lost else (distance / 1000) / 2
 
-    def update_objects(self,):
+    def update_objects(self):
         # update the speeds and positions of the objects in game
         self.game_logic.update(0.2)
 
@@ -189,7 +211,8 @@ class GameLoop:
         self.game_logic.add_lander(lander)
         return lander
 
-    def game_start(self, config_data, ai_is_playing):
+    def game_start(self, ai_is_playing):
+        config_data = self.config_data
         self.controller = Controller()
         self.handler = EventHandler(self.controller, self)
         self.handler.first_key_press = ai_is_playing
